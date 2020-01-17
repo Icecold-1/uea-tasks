@@ -1,0 +1,5 @@
+/.idea/
+/out/production/UEANaloga1/
+*.iml
+# Project exclude paths
+/out/
