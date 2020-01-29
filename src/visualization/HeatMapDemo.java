@@ -5,6 +5,9 @@ import problems.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * <p>This class shows the various options of the HeatMap.</p>
@@ -283,9 +286,86 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
                 //TODO run EA on selected problem and draw population with drawPoint method
                 //TODO map solution x values to x and y coordinates on the heatmap
                 //TODO check useGraphicsYAxis
-                Solution sol = new Solution();
+                Problem p = new DropWave(numberOfEvaluations);
 
-                panel.drawPoint(400, 400, 10, Color.magenta);
+                switch (problemComboBox.getSelectedIndex()) {
+                    case 0:
+                        p = new DropWave(numberOfEvaluations);
+                        break;
+                    case 1:
+                        p = new Bohachevsky(numberOfEvaluations);
+                        break;
+                    case 2:
+                        p = new Booth(numberOfEvaluations);
+                        break;
+                    case 3:
+                        p = new Eggholder(numberOfEvaluations);
+                        break;
+                    case 4:
+                        p = new Holder(numberOfEvaluations);
+                        break;
+                    case 5:
+                        p = new Levy(numberOfEvaluations);
+                        break;
+                    case 6:
+                        p = new Schaffer(numberOfEvaluations);
+                        break;
+                    case 7:
+                        p = new Sphere(numberOfEvaluations);
+                        break;
+                }
+
+                int eval = 0, a, b, c;
+                List<Solution> population = new ArrayList<>();
+                Solution best;
+                double [] f = new double[1000];
+                double S_best = 0;
+
+                best = p.generateRandomSolution();
+                population.add(new Solution(best));
+                for(int j = 0 ; j < numberOfPartitions; j++) {
+                    Solution s = p.generateRandomSolution();
+                    population.add(s);
+                    if(s.getFitness() < best.getFitness())
+                        best = s;
+                }
+                Random r = new Random();
+                double fy;
+                while (eval < numberOfEvaluations) {
+                    for(int i = 0; i < population.size(); i++) {
+                        do {
+                            a = r.nextInt(numberOfPartitions);
+                        } while (i == a);
+                        do {
+                            b = r.nextInt(numberOfPartitions);
+                        } while (i == b || a == b);
+                        do {
+                            c = r.nextInt(numberOfPartitions);
+                        } while (i == c || a == c || b == c);
+                        int R = r.nextInt(2);
+                        double[] y = new double[2];
+                        for(int j = 0; j < 2; j++) {
+                            if((r.nextDouble()<0.4) || (j == R)) {
+                                y[j] = population.get(a).getX()[j] + 0.4*(population.get(b).getX()[j]-population.get(c).getX()[j]);
+                            }
+                            else {
+                                y[j] = population.get(i).getX()[j];
+                            }
+                            fy = p.evaluate(y);
+                            eval++;
+                            if(f[i]>fy) {
+                                f[i] = fy;
+                                population.get(i).setX(y);
+                            }
+                            if(eval>= numberOfEvaluations)
+                                break;
+                        }
+                        population.get(i).setX(y);
+                        p.evaluate(population.get(i).getX());
+
+                    }
+                }
+
             }
         });
 
@@ -335,6 +415,20 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
         
 	    this.getContentPane().add(listPane, BorderLayout.EAST);
         this.getContentPane().add(panel, BorderLayout.CENTER);
+    }
+
+    private double getXCoordinate(double x, double coef) {
+        return 500 + (x * coef);
+    }
+    private double getYCoordinate(double y, double coef) {
+        return 500 + (-y * coef);
+    }
+    public double[] Point(double[] p, double limit) {
+        double[] result = new double[2];
+        double coef = 500/limit;
+        result[0] = getXCoordinate(p[0], coef);
+        result[1] = getYCoordinate(p[1], coef);
+        return result;
     }
     
     public void focusGained(FocusEvent e)
