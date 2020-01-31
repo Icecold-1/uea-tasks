@@ -5,6 +5,8 @@ import problems.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -58,7 +60,7 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
 
     int numberOfPartitions = 1000;
     int numberOfEvaluations = 30000; //TODO set from UI
-    boolean useGraphicsYAxis = false;
+    boolean useGraphicsYAxis = true;
 
     ImageIcon[] icons;
     String[] names = {"GRADIENT_BLACK_TO_WHITE",
@@ -163,6 +165,13 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
         textYTitle = new JTextField();
         textYTitle.addFocusListener(this);
         listPane.add(textYTitle, gbc);
+
+        label = new JLabel("Max Evaluations:");
+        listPane.add(label, gbc);
+
+        JTextField textMaxEval = new JTextField();
+        textMaxEval.addFocusListener(this);
+        listPane.add(textMaxEval, gbc);
         
         listPane.add(Box.createVerticalStrut(10), gbc);
         
@@ -171,62 +180,62 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
         gbc.weightx = 1.0;
         label = new JLabel("X min:");
         gbc.gridx = 0;
-        gbc.gridy = 14;
+        gbc.gridy = 15;
         listPane.add(label, gbc);
         textXMin = new JTextField();
         textXMin.addFocusListener(this);
-        gbc.gridy = 15;
+        gbc.gridy = 16;
         listPane.add(textXMin, gbc);
         
         label = new JLabel("X max:");
         gbc.gridx = 1;
-        gbc.gridy = 14;
+        gbc.gridy = 15;
         listPane.add(label, gbc);
         textXMax = new JTextField();
         textXMax.addFocusListener(this);
-        gbc.gridy = 15;
+        gbc.gridy = 16;
         listPane.add(textXMax, gbc);
         
         label = new JLabel("Y min:");
         gbc.gridx = 2;
-        gbc.gridy = 14;
+        gbc.gridy = 15;
         listPane.add(label, gbc);
         textYMin = new JTextField();
         textYMin.addFocusListener(this);
-        gbc.gridy = 15;
+        gbc.gridy = 16;
         listPane.add(textYMin, gbc);
         
         label = new JLabel("Y max:");
         gbc.gridx = 3;
-        gbc.gridy = 14;
+        gbc.gridy = 15;
         listPane.add(label, gbc);
         textYMax = new JTextField();
         textYMax.addFocusListener(this);
-        gbc.gridy = 15;
+        gbc.gridy = 16;
         listPane.add(textYMax, gbc);
         
         gbc.gridx = 0;
-        gbc.gridy = 16;
+        gbc.gridy = 17;
         gbc.gridwidth = GridBagConstraints.REMAINDER;
         listPane.add(Box.createVerticalStrut(10), gbc);
         
         label = new JLabel("FG Color:");
         gbc.gridx = 0;
-        gbc.gridy = 17;
+        gbc.gridy = 18;
         gbc.gridwidth = 2;
         listPane.add(label, gbc);
         textFGColor = new JTextField();
         textFGColor.addFocusListener(this);
-        gbc.gridy = 18;
+        gbc.gridy = 19;
         listPane.add(textFGColor, gbc);
         
         label = new JLabel("BG Color:");
         gbc.gridx = 2;
-        gbc.gridy = 17;
+        gbc.gridy = 18;
         listPane.add(label, gbc);
         textBGColor = new JTextField();
         textBGColor.addFocusListener(this);
-        gbc.gridy = 18;
+        gbc.gridy = 19;
         listPane.add(textBGColor, gbc);
         
         gbc.gridx = 0;
@@ -286,86 +295,79 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
                 //TODO run EA on selected problem and draw population with drawPoint method
                 //TODO map solution x values to x and y coordinates on the heatmap
                 //TODO check useGraphicsYAxis
-                Problem p = new DropWave(numberOfEvaluations);
-
-                switch (problemComboBox.getSelectedIndex()) {
-                    case 0:
-                        p = new DropWave(numberOfEvaluations);
-                        break;
-                    case 1:
-                        p = new Bohachevsky(numberOfEvaluations);
-                        break;
-                    case 2:
-                        p = new Booth(numberOfEvaluations);
-                        break;
-                    case 3:
-                        p = new Eggholder(numberOfEvaluations);
-                        break;
-                    case 4:
-                        p = new Holder(numberOfEvaluations);
-                        break;
-                    case 5:
-                        p = new Levy(numberOfEvaluations);
-                        break;
-                    case 6:
-                        p = new Schaffer(numberOfEvaluations);
-                        break;
-                    case 7:
-                        p = new Sphere(numberOfEvaluations);
-                        break;
-                }
+                Problem p = problems[problemComboBox.getSelectedIndex()];
 
                 int eval = 0, a, b, c;
                 List<Solution> population = new ArrayList<>();
-                Solution best;
-                double [] f = new double[1000];
-                double S_best = 0;
 
-                best = p.generateRandomSolution();
-                population.add(new Solution(best));
+                assert p != null;
+                //Generiramo naključne vrednosti populacije
                 for(int j = 0 ; j < numberOfPartitions; j++) {
                     Solution s = p.generateRandomSolution();
-                    population.add(s);
-                    if(s.getFitness() < best.getFitness())
-                        best = s;
+                    p.evaluate(s);
+                    if(p.isFeasible(s))
+                        population.add(s);
+                    else {
+                        p.setFeasible(s.getX());
+                        population.add(s);
+                    }
+                    //Nastavimo fitnes j-temu elementu populacije
+                    population.get(j).setFitness(p.evaluate(s.getX()));
                 }
                 Random r = new Random();
                 double fy;
-                while (eval < numberOfEvaluations) {
-                    for(int i = 0; i < population.size(); i++) {
-                        do {
-                            a = r.nextInt(numberOfPartitions);
-                        } while (i == a);
-                        do {
-                            b = r.nextInt(numberOfPartitions);
-                        } while (i == b || a == b);
-                        do {
-                            c = r.nextInt(numberOfPartitions);
-                        } while (i == c || a == c || b == c);
-                        int R = r.nextInt(2);
-                        double[] y = new double[2];
-                        for(int j = 0; j < 2; j++) {
-                            if((r.nextDouble()<0.4) || (j == R)) {
-                                y[j] = population.get(a).getX()[j] + 0.4*(population.get(b).getX()[j]-population.get(c).getX()[j]);
+                //Try-catch da preverimo validnost vnesenega števila v text input
+                try{
+                    int maxEval = Integer.parseInt(textMaxEval.getText());
+                    while (eval < maxEval) {
+                        //Izberemo 3 naključne posameznike iz populacije, ki se med seboj razlikujejo
+                        for(int i = 0; i < population.size(); i++) {
+                            do {
+                                a = r.nextInt(numberOfPartitions);
+                            } while (i == a);
+                            do {
+                                b = r.nextInt(numberOfPartitions);
+                            } while (i == b || a == b);
+                            do {
+                                c = r.nextInt(numberOfPartitions);
+                            } while (i == c || a == c || b == c);
+                            int R = r.nextInt(2);
+                            double[] y = new double[2];
+                            //Izračunamo fitnes i-tega posameznika iz populacije
+                            //CR = 0.4 (Crossover Possibility - možnost križanja) in F = 0.5 (Differential Weight - diferenčna teža)
+                            for(int j = 0; j < 2; j++) {
+                                if((r.nextDouble()<0.4) || (j == R)) {
+                                    y[j] = population.get(a).getX()[j] + 0.5*(population.get(b).getX()[j]-population.get(c).getX()[j]);
+                                }
+                                else {
+                                    y[j] = population.get(i).getX()[j];
+                                }
+                                fy = p.evaluate(y);
+                                eval++;
+                                if(population.get(i).getFitness() >= fy) {
+                                    population.get(i).setFitness(fy);
+                                    population.get(i).setX(y);
+                                }
+                                if(eval>= numberOfEvaluations)
+                                    break;
                             }
-                            else {
-                                y[j] = population.get(i).getX()[j];
-                            }
-                            fy = p.evaluate(y);
-                            eval++;
-                            if(f[i]>fy) {
-                                f[i] = fy;
-                                population.get(i).setX(y);
-                            }
-                            if(eval>= numberOfEvaluations)
-                                break;
+                            population.get(i).setX(y);
+                            p.evaluate(population.get(i).getX());
                         }
-                        population.get(i).setX(y);
-                        p.evaluate(population.get(i).getX());
-
                     }
+                    for (Solution solution : population) {
+                        double[] point = Point(solution.getX(), p.getUpperBounds()[0]);
+                        solution.setX(point);
+                    }
+                    p.setPopulation(population);
+                    try {
+                        ProblemHeatmap.main(p);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(null, "Enter a valid number for Max Evaluations!", "Error", JOptionPane.INFORMATION_MESSAGE);
                 }
-
             }
         });
 
@@ -374,8 +376,13 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
         //----------------------------------------------------------------------
 
         problemComboBox.setSelectedIndex(0);
-        selectedProblem = problems[0];
-        double[][] data =  ProblemHeatmap.GetProblemHeatmapValues(selectedProblem.getName(), numberOfPartitions);
+        selectedProblem = problems[problemComboBox.getSelectedIndex()];
+        double[][] data = new double[numberOfPartitions][numberOfPartitions];
+        try {
+            data = ProblemHeatmap.GetProblemHeatmapValues(selectedProblem.getName(), numberOfPartitions);
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        }
 
         // you can use a pre-defined gradient:
         panel = new HeatMap(data, useGraphicsYAxis, Gradient.GRADIENT_RAINBOW);
@@ -416,18 +423,19 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
 	    this.getContentPane().add(listPane, BorderLayout.EAST);
         this.getContentPane().add(panel, BorderLayout.CENTER);
     }
-
+    //Nastavimo X in Y koordinate
     private double getXCoordinate(double x, double coef) {
         return 500 + (x * coef);
     }
     private double getYCoordinate(double y, double coef) {
         return 500 + (-y * coef);
     }
+    //Funkcija za vračanje koordinat X in Y v populaciji, koeficient delimo 500/zgornji limit
     public double[] Point(double[] p, double limit) {
         double[] result = new double[2];
         double coef = 500/limit;
-        result[0] = getXCoordinate(p[0], coef);
-        result[1] = getYCoordinate(p[1], coef);
+        result[0] = Math.round(getXCoordinate(p[0], coef));
+        result[1] = Math.round(getYCoordinate(p[1], coef));
         return result;
     }
     
@@ -578,11 +586,15 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
             Integer ix = (Integer) e.getItem();
             selectedProblem = problems[ix];
 
-            updateProblemData();
+            try {
+                updateProblemData();
+            } catch (FileNotFoundException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
-    private void updateProblemData() {
+    private void updateProblemData() throws FileNotFoundException {
         if(panel == null)
             return;
 

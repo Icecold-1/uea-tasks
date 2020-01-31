@@ -1,5 +1,6 @@
 package problems;
 
+import java.util.List;
 import java.util.Random;
 
 public abstract class Problem {
@@ -11,6 +12,8 @@ public abstract class Problem {
     protected String name;
 
     protected static Random random = new Random();
+
+    protected List<Solution> population;
 
     public Problem(int numberOfDimensions, int maxFES, String name) {
         this.name = name;
@@ -87,10 +90,17 @@ public abstract class Problem {
             if (x[i] < lowerBounds[i])
                 x[i] = lowerBounds[i];
         }
-
     }
 
     public int getFEScount() {
         return FEScount;
+    }
+
+    public List<Solution> getPopulation() {
+        return population;
+    }
+
+    public void setPopulation(List<Solution> population) {
+        this.population = population;
     }
 }
