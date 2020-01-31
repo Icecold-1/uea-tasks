@@ -1,6 +1,9 @@
 package problems;
 
+import java.util.List;
+
 public class Eggholder extends Problem {
+    List<Solution> population;
     public Eggholder(int maxFES) {
         super(2, maxFES, "Eggholder");
         for (int i = 0; i < numberOfDimensions; i++) {
@@ -18,5 +21,13 @@ public class Eggholder extends Problem {
         double x2 = x[1];
 
         return -(x2+47)*Math.sin(Math.sqrt(Math.abs(x2+(x1/2)+47)))-x1*Math.sin(Math.sqrt(Math.abs(x1-(x2+47))));
+    }
+
+    public List<Solution> getPopulation() {
+        return population;
+    }
+
+    public void setPopulation(List<Solution> population) {
+        this.population = population;
     }
 }

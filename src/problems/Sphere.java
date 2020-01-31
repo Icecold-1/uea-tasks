@@ -1,6 +1,9 @@
 package problems;
 
+import java.util.List;
+
 public class Sphere extends Problem {
+    List<Solution> population;
     public Sphere(int maxFES) {
         super(2, maxFES, "Sphere");
         for (int i = 0; i < numberOfDimensions; i++) {
@@ -17,5 +20,13 @@ public class Sphere extends Problem {
         double x1 = x[0];
 
         return x1*x1;
+    }
+
+    public List<Solution> getPopulation() {
+        return population;
+    }
+
+    public void setPopulation(List<Solution> population) {
+        this.population = population;
     }
 }

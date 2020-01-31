@@ -1,6 +1,9 @@
 package problems;
 
+import java.util.List;
+
 public class Schaffer extends Problem {
+    List<Solution> population;
     public Schaffer(int maxFES) {
         super(2, maxFES, "Schaffer");
         for (int i = 0; i < numberOfDimensions; i++) {
@@ -18,5 +21,13 @@ public class Schaffer extends Problem {
         double x2 = x[1];
 
         return 0.5+(Math.pow(Math.sin(Math.pow(x1, 2)-Math.pow(x2, 2)-0.5), 2)/(Math.pow(1+0.001*(Math.pow(x1,2)+Math.pow(x2,2)),2)));
+    }
+
+    public List<Solution> getPopulation() {
+        return population;
+    }
+
+    public void setPopulation(List<Solution> population) {
+        this.population = population;
     }
 }
