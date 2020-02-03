@@ -296,6 +296,7 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
                 //TODO map solution x values to x and y coordinates on the heatmap
                 //TODO check useGraphicsYAxis
                 Problem p = problems[problemComboBox.getSelectedIndex()];
+                Solution best = null;
 
                 int eval = 0, a, b, c;
                 List<Solution> population = new ArrayList<>();
@@ -334,7 +335,7 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
                             int R = r.nextInt(2);
                             double[] y = new double[2];
                             //Izračunamo fitnes i-tega posameznika iz populacije
-                            //CR = 0.4 (Crossover Possibility - možnost križanja) in F = 0.5 (Differential Weight - diferenčna teža)
+                            //CR = 0.4 (Crossover Possibility - možnost križanja) in F = 0.5 (Differential Weight - diferenčna utež)
                             for(int j = 0; j < 2; j++) {
                                 if((r.nextDouble()<0.4) || (j == R)) {
                                     y[j] = population.get(a).getX()[j] + 0.5*(population.get(b).getX()[j]-population.get(c).getX()[j]);
@@ -343,10 +344,12 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
                                     y[j] = population.get(i).getX()[j];
                                 }
                                 fy = p.evaluate(y);
+                                p.setFeasible(y);
                                 eval++;
                                 if(population.get(i).getFitness() >= fy) {
                                     population.get(i).setFitness(fy);
                                     population.get(i).setX(y);
+                                    best = population.get(i);
                                 }
                                 if(eval>= numberOfEvaluations)
                                     break;
@@ -357,8 +360,10 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
                     }
                     for (Solution solution : population) {
                         double[] point = Point(solution.getX(), p.getUpperBounds()[0]);
+                        panel.drawPoint((int)point[0], (int)point[1], 10, Color.YELLOW);
                         solution.setX(point);
                     }
+                    panel.drawPoint((int)best.getX()[0], (int)best.getX()[1], 20, Color.BLACK);
                     p.setPopulation(population);
                     try {
                         ProblemHeatmap.main(p);
@@ -434,8 +439,8 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
     public double[] Point(double[] p, double limit) {
         double[] result = new double[2];
         double coef = 500/limit;
-        result[0] = Math.round(getXCoordinate(p[0], coef));
-        result[1] = Math.round(getYCoordinate(p[1], coef));
+        result[0] = (int) Math.round(getXCoordinate(p[0], coef));
+        result[1] = (int) Math.round(getYCoordinate(p[1], coef));
         return result;
     }
     
