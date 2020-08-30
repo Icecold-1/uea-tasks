@@ -4,6 +4,16 @@ import java.util.List;
 
 public class Eggholder extends Problem {
     List<Solution> population;
+    public double maxFitness = 2500.0;
+
+    public double getMaxFitness() {
+        return maxFitness;
+    }
+
+    public void setMaxFitness(double maxFitness) {
+        this.maxFitness = maxFitness;
+    }
+
     public Eggholder(int maxFES) {
         super(2, maxFES, "Eggholder");
         for (int i = 0; i < numberOfDimensions; i++) {

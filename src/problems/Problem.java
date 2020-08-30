@@ -9,6 +9,7 @@ public abstract class Problem {
     protected int FEScount = 0;
     protected double[] upperBounds;
     protected double[] lowerBounds;
+    protected double maxFitness;
     protected String name;
 
     protected static Random random = new Random();
@@ -25,6 +26,10 @@ public abstract class Problem {
 
     public String getName() {
         return name;
+    }
+
+    public double getMaxFitness() {
+        return maxFitness;
     }
 
     public int getNumberOfDimensions() {

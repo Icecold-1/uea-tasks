@@ -21,6 +21,10 @@ public class Solution {
         System.arraycopy(s.x, 0, x, 0, s.x.length);
     }
 
+    public Solution(int d) {
+        x = new double[d];
+    }
+
     public double getFitness() {
         return fitness;
     }

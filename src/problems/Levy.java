@@ -4,6 +4,16 @@ import java.util.List;
 
 public class Levy extends Problem {
     List<Solution> population;
+    public double maxFitness = 450.0;
+
+    public double getMaxFitness() {
+        return maxFitness;
+    }
+
+    public void setMaxFitness(double maxFitness) {
+        this.maxFitness = maxFitness;
+    }
+
     public Levy(int maxFES) {
         super(2, maxFES, "Levy");
         for (int i = 0; i < numberOfDimensions; i++) {
