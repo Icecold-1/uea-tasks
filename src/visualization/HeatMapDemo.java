@@ -1,10 +1,15 @@
 package visualization;
 
+import org.w3c.dom.css.RGBColor;
 import problems.*;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.Console;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,7 +64,7 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
     JComboBox problemComboBox;
 
     int numberOfPartitions = 1000;
-    int numberOfEvaluations = 30000; //TODO set from UI
+    int numberOfEvaluations = 1000000; //TODO set from UI - DONE
     boolean useGraphicsYAxis = true;
 
     ImageIcon[] icons;
@@ -86,12 +91,15 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
             new DropWave(numberOfEvaluations),
             new Bohachevsky(numberOfEvaluations),
             new Booth(numberOfEvaluations),
-            new Eggholder(numberOfEvaluations),
+            new Branin(numberOfEvaluations),
+            new Easom(numberOfEvaluations),
             new Holder(numberOfEvaluations),
             new Levy(numberOfEvaluations),
+            new Michalewicz(numberOfEvaluations),
             new Schaffer(numberOfEvaluations),
-            new Sphere(numberOfEvaluations)
-    }; //TODO fill with available problems
+            new Sphere(numberOfEvaluations),
+            new ThreeHumpCamel(numberOfEvaluations)
+    }; //TODO fill with available problems - DONE
 
     Problem selectedProblem;
 
@@ -171,6 +179,7 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
 
         JTextField textMaxEval = new JTextField();
         textMaxEval.addFocusListener(this);
+        textMaxEval.setText(""+numberOfEvaluations);
         listPane.add(textMaxEval, gbc);
         
         listPane.add(Box.createVerticalStrut(10), gbc);
@@ -295,85 +304,62 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
                 //TODO run EA on selected problem and draw population with drawPoint method
                 //TODO map solution x values to x and y coordinates on the heatmap
                 //TODO check useGraphicsYAxis
+                numberOfEvaluations = Integer.parseInt(textMaxEval.getText());
+
                 Problem p = problems[problemComboBox.getSelectedIndex()];
-                Solution best = null;
+                p.resetEvaluations();
 
-                int eval = 0, a, b, c;
                 List<Solution> population = new ArrayList<>();
+                double x_inc = Math.abs(Double.parseDouble(textXMax.getText())-Double.parseDouble(textXMin.getText()))/1000;
+                double y_inc = Math.abs(Double.parseDouble(textYMax.getText())-Double.parseDouble(textYMin.getText()))/1000;
 
-                assert p != null;
-                //Generiramo naključne vrednosti populacije
-                for(int j = 0 ; j < numberOfPartitions; j++) {
-                    Solution s = p.generateRandomSolution();
-                    p.evaluate(s);
-                    if(p.isFeasible(s))
-                        population.add(s);
-                    else {
-                        p.setFeasible(s.getX());
-                        population.add(s);
-                    }
-                    //Nastavimo fitnes j-temu elementu populacije
-                    population.get(j).setFitness(p.evaluate(s.getX()));
-                }
-                Random r = new Random();
-                double fy;
-                //Try-catch da preverimo validnost vnesenega števila v text input
-                try{
-                    int maxEval = Integer.parseInt(textMaxEval.getText());
-                    while (eval < maxEval) {
-                        //Izberemo 3 naključne posameznike iz populacije, ki se med seboj razlikujejo
-                        for(int i = 0; i < population.size(); i++) {
-                            do {
-                                a = r.nextInt(numberOfPartitions);
-                            } while (i == a);
-                            do {
-                                b = r.nextInt(numberOfPartitions);
-                            } while (i == b || a == b);
-                            do {
-                                c = r.nextInt(numberOfPartitions);
-                            } while (i == c || a == c || b == c);
-                            int R = r.nextInt(2);
-                            double[] y = new double[2];
-                            //Izračunamo fitnes i-tega posameznika iz populacije
-                            //CR = 0.4 (Crossover Possibility - možnost križanja) in F = 0.5 (Differential Weight - diferenčna utež)
-                            for(int j = 0; j < 2; j++) {
-                                if((r.nextDouble()<0.4) || (j == R)) {
-                                    y[j] = population.get(a).getX()[j] + 0.5*(population.get(b).getX()[j]-population.get(c).getX()[j]);
-                                }
-                                else {
-                                    y[j] = population.get(i).getX()[j];
-                                }
-                                fy = p.evaluate(y);
-                                p.setFeasible(y);
-                                eval++;
-                                if(population.get(i).getFitness() >= fy) {
-                                    population.get(i).setFitness(fy);
-                                    population.get(i).setX(y);
-                                    best = population.get(i);
-                                }
-                                if(eval>= numberOfEvaluations)
-                                    break;
+                double high_x = Double.parseDouble(textXMax.getText());
+                double low_x = Double.parseDouble(textXMin.getText());
+
+                double high_y = Double.parseDouble(textYMax.getText());
+                double low_y = Double.parseDouble(textYMin.getText());
+
+                Solution best = new Solution(new double[2], Double.MAX_VALUE);
+
+                for(double x = low_x; x <= high_x; x=x+x_inc) {
+                    for(double y = low_y; y <= high_y; y=y+y_inc) {
+
+                        double[] x_sol = new double[2];
+                        x_sol[0] = x;
+                        x_sol[1] = y;
+
+                        double fitness = p.evaluate(x_sol);
+                        if(fitness==Double.MAX_VALUE)
+                            break;
+                        else {
+                            Solution s = new Solution(x_sol, fitness);
+
+                            if(s.getFitness() <= best.getFitness())
+                                best = s;
+
+                            if(!p.isFeasible(s)){
+                                p.setFeasible(s.getX());
                             }
-                            population.get(i).setX(y);
-                            p.evaluate(population.get(i).getX());
+
+                            int x_coord = PointX(x_sol[1], high_x, low_x);
+                            int y_coord = PointY(x_sol[0], high_y, low_y);
+                            panel.drawPoint(x_coord, y_coord, 2, setColor(fitness, p.getMaxFitness()));
+                            population.add(s);
                         }
                     }
-                    for (Solution solution : population) {
-                        double[] point = Point(solution.getX(), p.getUpperBounds()[0]);
-                        panel.drawPoint((int)point[0], (int)point[1], 10, Color.YELLOW);
-                        solution.setX(point);
-                    }
-                    panel.drawPoint((int)best.getX()[0], (int)best.getX()[1], 20, Color.BLACK);
-                    p.setPopulation(population);
-                    try {
-                        ProblemHeatmap.main(p);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(null, "Enter a valid number for Max Evaluations!", "Error", JOptionPane.INFORMATION_MESSAGE);
+                }
+
+                panel.drawPoint(PointX(best.getX()[1], high_x, low_x), PointY(best.getX()[0], high_y, low_y), 5, setInverse(PointX(best.getX()[1], high_x, low_x), PointY(best.getX()[0], high_y, low_y)));
+
+                p.setPopulation(population);
+
+                try{
+                    ProblemHeatmap.main(p);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
                 }
             }
+
         });
 
         listPane.add(OKButton,gbc);
@@ -428,6 +414,54 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
 	    this.getContentPane().add(listPane, BorderLayout.EAST);
         this.getContentPane().add(panel, BorderLayout.CENTER);
     }
+
+    private Color setInverse(int x_coord, int y_coord) {
+        Color c = null;
+        try {
+            Robot robot = new Robot();
+
+            c = robot.getPixelColor(x_coord, y_coord);
+            int b = c.getBlue();
+            int r = c.getRed();
+            int g = c.getGreen();
+
+            return new Color(255-r, 255-g, 255-b);
+        } catch (Exception evt) {
+            System.err.println(evt.getMessage());
+        }
+
+        return c;
+    }
+
+    private Color setColor(double fitness, double maxFitness) {
+        double colorMapWidth = 62.0;
+        Color[][] color = null;
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(System.getProperty("user.dir"));
+        sb.append("\\res\\");
+        sb.append(names[gradientComboBox.getSelectedIndex()]);
+        sb.append(".gif");
+
+        try {
+            BufferedImage image = ImageIO.read(new File(sb.toString()));
+            color = new Color[image.getWidth()][image.getHeight()];
+
+            for(int x = 1; x < image.getWidth(); x++) {
+                for(int y = 1; y < image.getHeight(); y++) {
+                    color[x][y] = new Color(image.getRGB(x, y));
+                }
+            }
+        } catch(IOException ex) {
+            ex.printStackTrace();
+        }
+
+        System.out.println(fitness/maxFitness);
+        int x_color = (int)Math.abs((fitness/maxFitness)*colorMapWidth);
+
+        return color[x_color][4];
+    }
     //Nastavimo X in Y koordinate
     private double getXCoordinate(double x, double coef) {
         return 500 + (x * coef);
@@ -436,12 +470,14 @@ class HeatMapDemo extends JFrame implements ItemListener, FocusListener
         return 500 + (-y * coef);
     }
     //Funkcija za vračanje koordinat X in Y v populaciji, koeficient delimo 500/zgornji limit
-    public double[] Point(double[] p, double limit) {
-        double[] result = new double[2];
-        double coef = 500/limit;
-        result[0] = (int) Math.round(getXCoordinate(p[0], coef));
-        result[1] = (int) Math.round(getYCoordinate(p[1], coef));
-        return result;
+    public int PointX(double p, double low, double high) {
+        double coef = 1000 / Math.abs(high-low);
+        return (int) Math.round(getXCoordinate(p, coef));
+    }
+
+    public int PointY(double p, double low, double high) {
+        double coef = 1000 / Math.abs(high-low);
+        return (int) Math.round(getYCoordinate(p, coef));
     }
     
     public void focusGained(FocusEvent e)

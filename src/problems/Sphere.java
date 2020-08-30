@@ -4,6 +4,16 @@ import java.util.List;
 
 public class Sphere extends Problem {
     List<Solution> population;
+    public double maxFitness = 80.0;
+
+    public double getMaxFitness() {
+        return maxFitness;
+    }
+
+    public void setMaxFitness(double maxFitness) {
+        this.maxFitness = maxFitness;
+    }
+
     public Sphere(int maxFES) {
         super(2, maxFES, "Sphere");
         for (int i = 0; i < numberOfDimensions; i++) {

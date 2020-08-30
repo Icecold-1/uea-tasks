@@ -4,6 +4,16 @@ import java.util.List;
 
 public class Booth extends Problem{
     List<Solution> population;
+    public double maxFitness = 3000.0;
+
+    public double getMaxFitness() {
+        return maxFitness;
+    }
+
+    public void setMaxFitness(double maxFitness) {
+        this.maxFitness = maxFitness;
+    }
+
     public Booth(int maxFES) {
         super(2, maxFES, "Booth");
         for (int i = 0; i < numberOfDimensions; i++) {
